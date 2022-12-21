@@ -36,12 +36,12 @@ brownie networks add Avalanche avalanche-mainnet chainid=43114 host='https://api
 
 ## Setting up PostgreSQL
 
-Installing the dependencies. Install psycopg2 both locally as well as in the virtualenv from which brownie runs.
+Installing the dependencies. Install `psycopg2` both locally as well as in the virtualenv from which brownie runs. The `multicall` library only needs to be installed in the brownie virtualenv.
 
 ```
 apt-get install python3-psycopg2 postgresql postgresql-contrib libpq-dev
 pip3 install psycopg2
-/home/<user>/.local/pipx/venvs/eth-brownie/bin/python3 -m pip install psycopg2
+/home/<user>/.local/pipx/venvs/eth-brownie/bin/python3 -m pip install psycopg2 multicall
 ```
 
 Setting up and starting a cluster.
