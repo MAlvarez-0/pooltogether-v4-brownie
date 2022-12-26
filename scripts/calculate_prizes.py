@@ -117,7 +117,9 @@ def calculate_prizes(network):
 
     callsList = []
 
-    batches = createBatches(all_accounts, 3) # NUMBER OF ADDRESSES BY BATCH
+    # Batch requests over several accounts based on the network (taking into account RPC limits)
+    batch_size = options["config"]["batch_size"][network]
+    batches = createBatches(all_accounts, batch_size)
 
     total = 0
     for batch in batches:

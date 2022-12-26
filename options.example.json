@@ -5,7 +5,13 @@
         "database": "<database name, e.g. prizes>",
         "password": "<database password>",
         "addresses": [],
-        "maximum_retries": 5
+        "maximum_retries": 5,
+        "batch_size": {
+            "ethereum": 100,
+            "polygon": 100,
+            "avalanche": 1,
+            "optimism": 100
+        }
     },
     "contracts": {
         "ethereum": {
