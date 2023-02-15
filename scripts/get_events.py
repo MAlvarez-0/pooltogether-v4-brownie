@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import pickle
+import requests
 import time
 
 from dotenv import load_dotenv
@@ -12,8 +13,8 @@ from classes.helper import Helper
 
 from utils.logger import setup_stdout_logger
 
-# This function is tailored to fetch iterative events from Alchemy and won't work with another node API provider such as Infura
-def get_events_iteratively(event, from_block, to_block, blocks_per_call=131072):
+# This function is tailored to iteratively fetch events from Alchemy and won't work with another node API provider such as Infura
+def get_events(event, from_block, to_block, blocks_per_call=1048576):
     logging.info(f"Fetching {event.event_name} events iteratively from {from_block} to {to_block} limited to {blocks_per_call} blocks")
     events = []
     for block in range(from_block, to_block, blocks_per_call):
@@ -25,32 +26,23 @@ def get_events_iteratively(event, from_block, to_block, blocks_per_call=131072):
         except ValueError as err:
             if "message" in err.args[0] and "Log response size exceeded." in err.args[0]["message"]:
                 logging.info(f"Could not fetch all events at once, falling back to iterative event fetching")
-                events.extend(get_events_iteratively(event, block, to_block, blocks_per_call=int(blocks_per_call / 2)))
+                events.extend(get_events(event, block, to_block, blocks_per_call=int(blocks_per_call / 2)))
                 break
             elif "message" in err.args[0] and "requested too many blocks" in err.args[0]["message"]:
                 logging.info(f"Could not fetch all events at once, falling back to iterative event fetching")
-                events.extend(get_events_iteratively(event, block, to_block, blocks_per_call=int(blocks_per_call / 2)))
+                events.extend(get_events(event, block, to_block, blocks_per_call=int(blocks_per_call / 2)))
+                break
+            else:
+                raise
+        except requests.exceptions.ReadTimeout as err:
+            if "Read timed out." in str(err.args[0]):
+                logging.info(f"Could not fetch all events at once, falling back to iterative event fetching")
+                events.extend(get_events(event, block, to_block, blocks_per_call=int(blocks_per_call / 2)))
                 break
             else:
                 raise
         time.sleep(0.2)
     return events
-
-# This function is tailored to fetch iterative events from Alchemy and won't work with another node API provider such as Infura
-def get_events(event, from_block, to_block):
-    logging.info(f"Fetching {event.event_name} events from block {from_block} to block {to_block}")
-    event_filter = event.createFilter(fromBlock=from_block, toBlock=to_block)
-    try:
-        return event_filter.get_all_entries()
-    except ValueError as err:
-        if "message" in err.args[0] and "Log response size exceeded." in err.args[0]["message"]:
-            logging.info(f"Could not fetch all {event.event_name} events at once, falling back to iterative event fetching")
-            return get_events_iteratively(event, from_block, to_block)
-        elif "message" in err.args[0] and "requested too many blocks" in err.args[0]["message"]:
-            logging.info(f"Could not fetch all {event.event_name} events at once, falling back to iterative event fetching")
-            return get_events_iteratively(event, from_block, to_block)
-        else:
-            raise
 
 def get_block_boundaries(deploy_data, w3_provider):
     last_block = w3_provider.eth.get_block("latest")
